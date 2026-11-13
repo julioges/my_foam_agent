@@ -41,6 +41,19 @@ assert.equal(reach('Inicio manual',outgoing).size,mainNodes.length);assert.equal
 for(const n of mainNodes){if(['Inicio manual','Resultado e historial','Recoger error y preparar informe'].includes(n.name))continue;assert.equal(n.onError,'continueErrorOutput');assert.equal(w.connections[n.name].main[n.type.endsWith('.if')?2:1][0].node,'Recoger error y preparar informe');}
 console.log('PASS one main entry, one final report, full reachability and explicit error outputs');
 
+const ifNodes=w.nodes.filter(n=>n.type==='n8n-nodes-base.if');
+for(const n of ifNodes){
+ const branches=w.connections[n.name]?.main;
+ const required=n.onError==='continueErrorOutput'?3:2;
+ assert.equal(branches?.length,required,n.name+': wrong output count');
+ for(let index=0;index<required;index++){
+  assert(branches[index].length>0,n.name+': disconnected '+['true','false','error'][index]);
+  for(const edge of branches[index]){assert.equal(edge.type,'main');assert(byName[edge.node],n.name+': unknown destination');assert.equal(edge.index,0);}
+ }
+}
+console.log('PASS all '+ifNodes.length+' IF nodes have connected true/false/error outputs');
+
+
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 for(const n of w.nodes){if(n.type.endsWith('.code'))new AsyncFunction('$input','$execution','$','require','Buffer',n.parameters.jsCode);}
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'foam-n8n-test-'));const bin=path.join(temp,'bin');fs.mkdirSync(bin);const inputs=path.join(temp,'inputs');fs.mkdirSync(inputs);const runs=path.join(temp,'runs');fs.mkdirSync(runs);const tutorials=path.join(temp,'tutorials/incompressible/icoFoam/cavity/system');fs.mkdirSync(tutorials,{recursive:true});fs.writeFileSync(path.join(tutorials,'controlDict'),'application icoFoam;');

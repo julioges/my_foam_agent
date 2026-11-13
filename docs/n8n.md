@@ -157,3 +157,32 @@ Cada Code, AI Agent, IF y Execute Command del flujo principal dispone de una sal
 Los ocho modelos, ocho memorias, ocho parsers y seis HTTP Request Tool son subnodos de n8n: no admiten una entrada `main` y se conectan mediante `ai_languageModel`, `ai_memory`, `ai_outputParser` o `ai_tool`. Por eso la condición de una entrada y una salida se aplica al flujo de ejecución principal, no al grado de todos los subnodos auxiliares. No hay nodos decorativos o componentes desconectados.
 
 Estas rutas no convierten en recuperable una caída del contenedor o una cancelación manual de n8n: esos eventos pueden impedir que se ejecute cualquier nodo final.
+
+## Auditoría de salidas IF
+
+Se verificaron los 22 nodos IF: salida 0=true, salida 1=false y salida 2=error (`continueErrorOutput`). Todas están conectadas a destinos existentes. No hay nodos Switch en esta versión.
+
+| IF | True | False | Error |
+| --- | --- | --- | --- |
+| Runtime preparado | Agente Preparacion · preparar | Guardar informe JSON legible | Recoger error y preparar informe |
+| Requisitos completos | Recuperar tutoriales legibles | Guardar informe JSON legible | Recoger error y preparar informe |
+| Referencias disponibles | Entrar en etapa de malla | Guardar informe JSON legible | Recoger error y preparar informe |
+| Backend Standard | Mallado Standard nativo | Backend Gmsh | Recoger error y preparar informe |
+| Backend Gmsh | Mallado Gmsh nativo | Malla Custom importada | Recoger error y preparar informe |
+| Quedan archivos | Agente Escritor Secuencial · preparar | Guardar archivos y scripts legibles | Recoger error y preparar informe |
+| Escritura correcta | Comprobar progreso de reparacion | Guardar informe JSON legible | Recoger error y preparar informe |
+| Puede continuar | Necesita revision estatica | Guardar informe JSON legible | Recoger error y preparar informe |
+| Necesita revision estatica | Agente Revisor Estatico · preparar | Preparar ejecucion nativa | Recoger error y preparar informe |
+| Corregir antes de ejecutar | Replanificar malla | Preparar ejecucion nativa | Recoger error y preparar informe |
+| Replanificar malla | Agente Planificador Malla · preparar | Agente Planificador Solver · preparar | Recoger error y preparar informe |
+| Runner disponible | Registrar intento | Guardar informe JSON legible | Recoger error y preparar informe |
+| Etapa validada | Malla completada | Seleccionar revisor de malla | Recoger error y preparar informe |
+| Malla completada | Entrar en etapa de solver | Visualizacion solicitada | Recoger error y preparar informe |
+| Seleccionar revisor de malla | Agente Revisor Malla · preparar | Agente Revisor Solver · preparar | Recoger error y preparar informe |
+| Reparacion autorizada por evidencia | Replanificar malla | Guardar informe JSON legible | Recoger error y preparar informe |
+| Visualizacion solicitada | Agente Visualizacion · preparar | Simulacion completada | Recoger error y preparar informe |
+| Reparar visualizacion | Agente Visualizacion · preparar | Guardar informe JSON legible | Recoger error y preparar informe |
+| Entrada ZIP validada | Extraer ZIP validado | Finalizar importacion y entradas | Recoger error y preparar informe |
+| Importacion preparada | Comprobar OpenFOAM Foundation v10 | Runtime preparado | Recoger error y preparar informe |
+| Entradas listas para ejecutar | Ejecutar OpenFOAM | Runner disponible | Recoger error y preparar informe |
+| Requiere checkMesh | Ejecutar checkMesh nativo | Runner disponible | Recoger error y preparar informe |
