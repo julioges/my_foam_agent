@@ -1,0 +1,26 @@
+services:
+  n8n:
+    build: .
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "138.100.110.37:5678:5678"
+      - "127.0.0.1:5678:5678"
+    environment:
+      TZ: Europe/Madrid
+      GENERIC_TIMEZONE: Europe/Madrid
+      N8N_SECURE_COOKIE: "false"
+      N8N_EDITOR_BASE_URL: "http://138.100.110.37:5678/"
+      # Enable Execute Command; retain the default Local File Trigger exclusion.
+      NODES_EXCLUDE: '["n8n-nodes-base.localFileTrigger"]'
+      NODE_FUNCTION_ALLOW_BUILTIN: fs,path,crypto
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - foam_runs:/data/runs
+      - ./inputs:/inputs:ro
+    shm_size: 1gb
+volumes:
+  n8n_data:
+    external: true
+    name: ${N8N_DATA_VOLUME:?Set N8N_DATA_VOLUME to your exact existing n8n volume name}
+  foam_runs:
