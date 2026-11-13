@@ -30,6 +30,17 @@ for(const agent of agents){
 }
 console.log('PASS 8 AI Agents; 8 Ollama models; 8 isolated local memories; 8 structured parsers; no HTTP agents');
 
+
+const mainNodes=w.nodes.filter(n=>!n.type.endsWith('.lmChatOllama')&&!n.type.endsWith('.memoryBufferWindow')&&!n.type.endsWith('.outputParserStructured')&&!n.type.endsWith('.httpRequestTool'));
+const incoming=new Map(mainNodes.map(n=>[n.name,[]])),outgoing=new Map(mainNodes.map(n=>[n.name,[]]));
+for(const [a,c]of Object.entries(w.connections))for(const branch of c.main||[])for(const e of branch){incoming.get(e.node)?.push(a);outgoing.get(a)?.push(e.node);}
+assert.deepEqual(mainNodes.filter(n=>!incoming.get(n.name).length).map(n=>n.name),['Inicio manual']);
+assert.deepEqual(mainNodes.filter(n=>!outgoing.get(n.name).length).map(n=>n.name),['Resultado e historial']);
+function reach(start,map){const found=new Set([start]),todo=[start];while(todo.length)for(const next of map.get(todo.pop())||[])if(!found.has(next)){found.add(next);todo.push(next);}return found;}
+assert.equal(reach('Inicio manual',outgoing).size,mainNodes.length);assert.equal(reach('Resultado e historial',incoming).size,mainNodes.length);
+for(const n of mainNodes){if(['Inicio manual','Resultado e historial','Recoger error y preparar informe'].includes(n.name))continue;assert.equal(n.onError,'continueErrorOutput');assert.equal(w.connections[n.name].main[n.type.endsWith('.if')?2:1][0].node,'Recoger error y preparar informe');}
+console.log('PASS one main entry, one final report, full reachability and explicit error outputs');
+
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 for(const n of w.nodes){if(n.type.endsWith('.code'))new AsyncFunction('$input','$execution','$','require','Buffer',n.parameters.jsCode);}
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'foam-n8n-test-'));const bin=path.join(temp,'bin');fs.mkdirSync(bin);const inputs=path.join(temp,'inputs');fs.mkdirSync(inputs);const runs=path.join(temp,'runs');fs.mkdirSync(runs);const tutorials=path.join(temp,'tutorials/incompressible/icoFoam/cavity/system');fs.mkdirSync(tutorials,{recursive:true});fs.writeFileSync(path.join(tutorials,'controlDict'),'application icoFoam;');
@@ -115,3 +126,5 @@ async function scenario(mode){
  console.log('PASS',mode,steps,'node steps',state.status);
 }
 (async()=>{try{for(const name of ['normal','needs-input','static-repair','static-no-changes','runtime-repair','cross-stage','no-progress','false-success','visualization-fails','gmsh','custom','imported','wrong-target','long-log','redirected-error','json-string-output','zip-import','zip-traversal','zip-symlink'])await scenario(name);console.log('PASS node syntax, topology, 19 simulated execution scenarios');}finally{fs.rmSync(temp,{recursive:true,force:true});}})().catch(e=>{console.error(e);process.exit(1)});
+
+(async()=>{const collect=byName['Recoger error y preparar informe'];const report=byName['Resultado e historial'];for(const source of ['Agente Planificador Malla · AI Agent','Guardar archivos y scripts legibles','Ejecutar PyVista']){const state={config:{model:'devstral-small-2:24b'},run_id:'test',solver_succeeded:source==='Ejecutar PyVista',history:[]};const fn=new AsyncFunction('$input','$','$prevNode',collect.parameters.jsCode);const result=await fn({first:()=>({json:{error:{message:'injected failure'}}})},()=>({first:()=>({json:state}),item:{json:state}}),{name:source});const final=await new AsyncFunction('$input',report.parameters.jsCode)({first:()=>result[0]});assert.equal(final[0].json.status,source==='Ejecutar PyVista'?'partial_success':'failed');assert(final[0].json.errors.some(e=>e.message==='injected failure'));}console.log('PASS agent, filesystem and visualization exceptions converge on the final report');})().catch(e=>{console.error(e);process.exitCode=1});

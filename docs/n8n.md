@@ -147,3 +147,13 @@ La ruta relativa es el único argumento que puede proponer el agente. Se rechaza
 - 19 escenarios simulados del workflow completo, incluidos importación ZIP, protección de rutas y symlinks, límites de reparación y comprobaciones de evidencia nativa.
 - Endpoint oficial HTTP comprobado con respuesta 206 al rango solicitado.
 - **Pendiente:** construcción completa de la imagen ampliada, conexión a tu Windows/Ollama y simulación CFD real. Las pruebas anteriores no prueban exactitud física ni sustituyen esas comprobaciones.
+
+## Entrada, salida y rutas de error
+
+El flujo principal tiene una sola entrada (`Inicio manual`) y una sola salida (`Resultado e historial`). Todos sus nodos son alcanzables desde esa entrada y tienen un camino al informe final, incluidos los bucles de revisión. La nota de arquitectura desconectada se ha eliminado.
+
+Cada Code, AI Agent, IF y Execute Command del flujo principal dispone de una salida de error explícita hacia `Recoger error y preparar informe`. Ese nodo conserva el contexto disponible, identifica el nodo fallido y desemboca directamente en el informe final; no reintenta un escritor de informes que haya fallado. Los fallos de visualización conservan `partial_success` cuando existe éxito previo del solver. Los errores de importación, validación, modelo y ejecución quedan reflejados en `errors` y `termination_reason`.
+
+Los ocho modelos, ocho memorias, ocho parsers y seis HTTP Request Tool son subnodos de n8n: no admiten una entrada `main` y se conectan mediante `ai_languageModel`, `ai_memory`, `ai_outputParser` o `ai_tool`. Por eso la condición de una entrada y una salida se aplica al flujo de ejecución principal, no al grado de todos los subnodos auxiliares. No hay nodos decorativos o componentes desconectados.
+
+Estas rutas no convierten en recuperable una caída del contenedor o una cancelación manual de n8n: esos eventos pueden impedir que se ejecute cualquier nodo final.
